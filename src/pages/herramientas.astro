@@ -1,0 +1,172 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { tools } from "../data/tools";
+---
+
+<BaseLayout
+  title="Herramientas — Mi Portfolio"
+  description="Herramientas que uso en ciberseguridad"
+  wide
+>
+  <div class="max-w-7xl mx-auto lg:grid lg:grid-cols-[minmax(0,1fr)_180px] lg:gap-12">
+    <!-- Contenido principal -->
+    <article>
+      <p class="font-mono text-sm text-[#9ab8ff] mb-3">$ which tools</p>
+      <div class="callout mb-10" data-callout="info">
+        <div class="callout-title">Nota</div>
+        <div class="callout-content">
+          <p>
+            Herramientas que uso en el día a día, tanto en laboratorios como en retos de
+            HackTheBox, TryHackMe y CTFs. La mayoría son open source y multiplataforma.
+          </p>
+        </div>
+      </div>
+
+      <div class="space-y-12">
+        {tools.map((cat) => (
+          <section id={cat.id} class="scroll-mt-24">
+            <h2 class="flex items-center gap-3 text-xl font-bold text-white mb-5 pb-2 border-b border-[#3a3f4a]">
+              <span class="font-mono text-[#6b7280]">//</span>
+              {cat.name}
+            </h2>
+
+            <div class="grid gap-3 sm:grid-cols-2">
+              {cat.tools.map((tool) => (
+                <a
+                  href={tool.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="group flex gap-3 p-3 rounded-lg border border-[#3a3f4a] bg-[#2e323c] hover:bg-[#353945] hover:border-[#9ab8ff] transition-colors"
+                >
+                  {/* Icono / letra */}
+                  <div
+                    class:list={[
+                      "tool-icon",
+                      !tool.icon && "is-fallback",
+                    ]}
+                  >
+                    {tool.icon && (
+                      <img
+                        src={tool.icon}
+                        alt=""
+                        loading="lazy"
+                        class="tool-icon-img"
+                        onerror="this.parentElement.classList.add('is-fallback'); this.remove();"
+                      />
+                    )}
+                    <span class="tool-icon-letter">
+                      {tool.name.charAt(0).toUpperCase()}
+                    </span>
+                  </div>
+
+                  {/* Contenido */}
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-baseline justify-between gap-2 mb-1">
+                      <h3 class="font-semibold text-white group-hover:text-[#9ab8ff] transition-colors leading-tight">
+                        {tool.name}
+                      </h3>
+                      <span class="text-[#6b7280] text-xs shrink-0 group-hover:text-[#9ab8ff] transition-colors">
+                        ↗
+                      </span>
+                    </div>
+                    <p class="text-sm text-[#9aa1ae] leading-relaxed">
+                      {tool.description}
+                    </p>
+                    {tool.tags && tool.tags.length > 0 && (
+                      <div class="flex flex-wrap gap-1.5 mt-2">
+                        {tool.tags.map((tag) => (
+                          <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#353945] text-[#9aa1ae]">
+                            #{tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </a>
+              ))}
+            </div>
+          </section>
+        ))}
+      </div>
+    </article>
+
+    <!-- Rail lateral derecho -->
+    <aside class="hidden lg:block">
+      <nav class="sticky top-8">
+        <p class="font-mono text-xs uppercase tracking-wider text-[#9ab8ff] mb-4">
+          Categorías
+        </p>
+        <ul class="border-l border-[#3a3f4a]">
+          {tools.map((cat) => (
+            <li>
+              <a
+                href={`#${cat.id}`}
+                data-rail-link={cat.id}
+                class="rail-link flex items-center gap-3 py-1.5 pl-4 pr-2 text-sm text-[#9aa1ae] hover:text-[#dce0e6] transition-colors -ml-px border-l-2 border-transparent"
+              >
+                <span class="rail-dot w-1.5 h-1.5 rounded-full bg-[#3a3f4a] shrink-0 transition-colors"></span>
+                <span>{cat.name}</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </nav>
+    </aside>
+  </div>
+
+  <script>
+    function initRail() {
+      const links = Array.from(
+        document.querySelectorAll<HTMLAnchorElement>("[data-rail-link]")
+      );
+      if (!links.length) return;
+
+      const items = links
+        .map((link) => {
+          const id = link.getAttribute("data-rail-link");
+          const el = id ? document.getElementById(id) : null;
+          return el && id ? { el, id, link } : null;
+        })
+        .filter((x): x is { el: HTMLElement; id: string; link: HTMLAnchorElement } => x !== null);
+
+      if (!items.length) return;
+
+      const update = () => {
+        const OFFSET = 140;
+        let activeId = items[0].id;
+        for (const item of items) {
+          const top = item.el.getBoundingClientRect().top;
+          if (top - OFFSET <= 0) activeId = item.id;
+          else break;
+        }
+
+        for (const item of items) {
+          const isActive = item.id === activeId;
+          item.link.classList.toggle("rail-active", isActive);
+          const dot = item.link.querySelector(".rail-dot") as HTMLElement | null;
+          if (dot) {
+            dot.classList.toggle("bg-[#9ab8ff]", isActive);
+            dot.classList.toggle("bg-[#3a3f4a]", !isActive);
+          }
+        }
+      };
+
+      let ticking = false;
+      const onScroll = () => {
+        if (ticking) return;
+        ticking = true;
+        requestAnimationFrame(() => {
+          update();
+          ticking = false;
+        });
+      };
+
+      window.addEventListener("scroll", onScroll, { passive: true });
+      window.addEventListener("resize", onScroll, { passive: true });
+      update();
+    }
+
+    initRail();
+    document.addEventListener("astro:page-load", initRail);
+  </script>
+</BaseLayout>

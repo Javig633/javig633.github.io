@@ -1,0 +1,305 @@
+---
+import { getCollection, render } from "astro:content";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import TocTree from "../../components/TocTree.astro";
+
+export async function getStaticPaths() {
+  const writeups = await getCollection("writeups");
+  return writeups.map((writeup) => ({
+    params: { slug: writeup.id },
+    props: { writeup },
+  }));
+}
+
+const { writeup } = Astro.props;
+const { Content, headings } = await render(writeup);
+
+const difficultyColor: Record<string, string> = {
+  Easy: "bg-[#2d3b2d] text-[#8fd48f] border-[#3e5140]",
+  Medium: "bg-[#3b3526] text-[#e5c07b] border-[#514a35]",
+  Hard: "bg-[#3b2a2a] text-[#e88a8a] border-[#513a3a]",
+  Insane: "bg-[#3a2540] text-[#c79ae5] border-[#503360]",
+};
+
+function formatDate(date: Date | undefined): string {
+  if (!date) return "";
+  return date.toLocaleDateString("es-ES", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+}
+
+// --- Construir árbol de TOC ---
+interface TocNode {
+  slug: string;
+  text: string;
+  depth: number;
+  rawDepth: number;
+  children: TocNode[];
+}
+
+function buildTocTree(hs: typeof headings): TocNode[] {
+  if (!hs.length) return [];
+
+  // Profundidad base = el heading menos profundo presente
+  const baseDepth = Math.min(...hs.map((h) => h.depth));
+
+  // Convertimos a nodos con depth normalizada
+  const nodes: TocNode[] = hs.map((h) => ({
+    slug: h.slug,
+    text: h.text,
+    depth: h.depth - baseDepth + 1,
+    rawDepth: h.depth,
+    children: [],
+  }));
+
+  const root: TocNode = {
+    slug: "",
+    text: "",
+    depth: 0,
+    rawDepth: 0,
+    children: [],
+  };
+  const stack: TocNode[] = [root];
+
+  for (const node of nodes) {
+    // Subimos en el stack hasta encontrar un padre con depth < node.depth
+    while (stack.length > 1 && stack[stack.length - 1].depth >= node.depth) {
+      stack.pop();
+    }
+    stack[stack.length - 1].children.push(node);
+    stack.push(node);
+  }
+
+  return root.children;
+}
+
+const tocHeadings = headings.filter((h) => h.depth <= 3);
+const tocTree = buildTocTree(tocHeadings);
+const hasToc = tocHeadings.length >= 3;
+---
+
+<BaseLayout
+  title={`${writeup.data.title} — Writeups`}
+  description={`Writeup de ${writeup.data.title}`}
+  wide
+>
+  <div class:list={[hasToc && "lg:grid lg:grid-cols-[220px_minmax(0,1fr)] lg:gap-10"]}>
+    <!-- Sidebar TOC -->
+    {hasToc && (
+      <aside class="hidden lg:block">
+        <nav class="sticky top-8 max-h-[calc(100vh-4rem)] overflow-y-auto pr-1">
+          <p class="font-mono text-sm text-white font-semibold mb-3 truncate">
+            {writeup.data.title}
+          </p>
+          <TocTree items={tocTree} />
+        </nav>
+      </aside>
+    )}
+
+    <article class:list={[!hasToc && "max-w-6xl mx-auto"]}>
+      <!-- Botón volver -->
+      <a
+        href="/writeups"
+        class="inline-flex items-center gap-2 text-sm text-[#9aa1ae] hover:text-[#9ab8ff] transition-colors mb-8"
+      >
+        ← Volver a writeups
+      </a>
+
+      <!-- Cabecera del writeup -->
+      <header class="mb-10">
+        {writeup.data.image && (
+          <div class="aspect-square w-full max-w-xs mx-auto mb-6 rounded-lg overflow-hidden border border-[#3a3f4a]">
+            <img
+              src={writeup.data.image.src}
+              alt={writeup.data.title}
+              class="w-full h-full object-cover"
+            />
+          </div>
+        )}
+
+        <h1 class="text-3xl font-bold text-white mb-4 text-center">
+          {writeup.data.title}
+        </h1>
+
+        {writeup.data.date && (
+          <p class="text-center text-sm font-mono text-[#9aa1ae] mb-4">
+            {formatDate(writeup.data.date)}
+          </p>
+        )}
+
+        <div class="flex flex-wrap justify-center gap-1.5 mb-4">
+          {writeup.data.platform && (
+            <span class="text-xs font-mono px-2 py-0.5 rounded border border-[#3a3f4a] bg-[#2a2e38] text-[#9aa1ae]">
+              {writeup.data.platform}
+            </span>
+          )}
+          {writeup.data.difficulty && (
+            <span
+              class:list={[
+                "text-xs font-mono px-2 py-0.5 rounded border",
+                difficultyColor[writeup.data.difficulty],
+              ]}
+            >
+              {writeup.data.difficulty}
+            </span>
+          )}
+          {writeup.data.os && (
+            <span class="text-xs font-mono px-2 py-0.5 rounded border border-[#3a3f4a] bg-[#2a2e38] text-[#9aa1ae]">
+              {writeup.data.os}
+            </span>
+          )}
+        </div>
+
+        {writeup.data.tags && writeup.data.tags.length > 0 && (
+          <div class="flex flex-wrap justify-center gap-x-2 gap-y-1">
+            {writeup.data.tags.map((tag) => (
+              <span class="text-xs font-mono text-[#9aa1ae]">#{tag}</span>
+            ))}
+          </div>
+        )}
+      </header>
+
+      <!-- Contenido -->
+      <div class="prose-custom">
+        <Content />
+      </div>
+    </article>
+  </div>
+
+ <script>
+    // ---------- Code blocks expand/collapse ----------
+    function initCodeBlocks() {
+      const COLLAPSE_HEIGHT = 400;
+
+      document
+        .querySelectorAll<HTMLPreElement>(".prose-custom pre")
+        .forEach((pre) => {
+          if (pre.dataset.processed === "true") return;
+          pre.dataset.processed = "true";
+
+          const lang = pre.dataset.language || "";
+
+          const header = document.createElement("div");
+          header.className = "code-header";
+
+          const langLabel = document.createElement("span");
+          langLabel.className = "code-lang";
+          langLabel.textContent = lang;
+          header.appendChild(langLabel);
+
+          const fullHeight = pre.scrollHeight;
+
+          if (fullHeight > COLLAPSE_HEIGHT) {
+            pre.classList.add("is-collapsible", "is-collapsed");
+
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "code-expand-btn";
+            btn.textContent = "Expand";
+            btn.addEventListener("click", () => {
+              const isCollapsed = pre.classList.toggle("is-collapsed");
+              btn.textContent = isCollapsed ? "Expand" : "Collapse";
+            });
+
+            header.appendChild(btn);
+          }
+
+          pre.appendChild(header);
+        });
+    }
+
+    // ---------- TOC scroll-spy + colapso ----------
+    function initToc() {
+      const links = Array.from(
+        document.querySelectorAll<HTMLAnchorElement>("a[data-toc-link]")
+      );
+      if (!links.length) return;
+
+      // Mapea slug → { el, link }
+      const items: { slug: string; el: HTMLElement; link: HTMLAnchorElement }[] = [];
+      for (const link of links) {
+        const slug = link.getAttribute("data-toc-link");
+        if (!slug) continue;
+        const el = document.getElementById(slug);
+        if (el) items.push({ slug, el, link });
+      }
+      if (!items.length) return;
+
+      // -------- Colapso: expandir solo la rama activa --------
+      const lis = Array.from(
+        document.querySelectorAll<HTMLLIElement>("li[data-has-children='true']")
+      );
+
+      const updateExpansion = (activeSlug: string | null) => {
+        lis.forEach((li) => {
+          // ¿Este li contiene el activeSlug en sí mismo o en sus descendientes?
+          const subtreeLinks = li.querySelectorAll("a[data-toc-link]");
+          const contains = Array.from(subtreeLinks).some(
+            (a) => a.getAttribute("data-toc-link") === activeSlug
+          );
+          li.setAttribute("data-expanded", contains ? "true" : "false");
+        });
+      };
+
+      // -------- Activo según scroll --------
+      const OFFSET = 120; // px desde el top de la ventana
+
+      const findActiveSlug = (): string => {
+        let active = items[0].slug;
+        for (const item of items) {
+          const top = item.el.getBoundingClientRect().top;
+          if (top - OFFSET <= 0) {
+            active = item.slug;
+          } else {
+            break;
+          }
+        }
+        return active;
+      };
+
+      const setActive = (slug: string) => {
+        for (const item of items) {
+          item.link.classList.toggle("toc-active", item.slug === slug);
+        }
+        updateExpansion(slug);
+      };
+
+      let ticking = false;
+      const onScroll = () => {
+        if (ticking) return;
+        ticking = true;
+        requestAnimationFrame(() => {
+          setActive(findActiveSlug());
+          ticking = false;
+        });
+      };
+
+      window.addEventListener("scroll", onScroll, { passive: true });
+      window.addEventListener("resize", onScroll, { passive: true });
+
+      // Estado inicial
+      setActive(findActiveSlug());
+    }
+
+    initCodeBlocks();
+    initToc();
+    document.addEventListener("astro:page-load", () => {
+      initCodeBlocks();
+      initToc();
+    });
+    // DEBUG — borrar cuando hayamos arreglado el árbol
+const debugHeadings = document.querySelectorAll("[data-toc-link]");
+console.log("=== DEBUG TOC ===");
+debugHeadings.forEach((a) => {
+  console.log(
+    a.getAttribute("data-toc-depth"),
+    "→",
+    a.textContent?.trim(),
+    "| id:",
+    a.getAttribute("data-toc-link")
+  );
+});
+  </script>
+</BaseLayout>

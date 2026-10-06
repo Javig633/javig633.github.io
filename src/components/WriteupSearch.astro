@@ -1,0 +1,271 @@
+---
+import type { CollectionEntry } from "astro:content";
+
+interface Props {
+  writeups: CollectionEntry<"writeups">[];
+}
+
+const { writeups } = Astro.props;
+
+const difficultyColor: Record<string, string> = {
+  Easy: "bg-[#2d3b2d] text-[#8fd48f] border-[#3e5140]",
+  Medium: "bg-[#3b3526] text-[#e5c07b] border-[#514a35]",
+  Hard: "bg-[#3b2a2a] text-[#e88a8a] border-[#513a3a]",
+  Insane: "bg-[#3a2540] text-[#c79ae5] border-[#503360]",
+};
+
+function formatDate(date: Date | undefined): string {
+  if (!date) return "";
+  return date.toLocaleDateString("es-ES", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+}
+
+const searchIndex = writeups.map((w) => ({
+  id: w.id,
+  title: w.data.title,
+  platform: w.data.platform ?? "",
+  difficulty: w.data.difficulty ?? "",
+  os: w.data.os ?? "",
+  tags: w.data.tags ?? [],
+}));
+---
+
+<div class="mb-8">
+  <div class="relative">
+    <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#6b7280] font-mono text-sm pointer-events-none">
+      /
+    </span>
+    <input
+      id="writeup-search"
+      type="search"
+      placeholder="Buscar por nombre, plataforma, tags..."
+      autocomplete="off"
+      class="w-full pl-8 pr-4 py-3 rounded-lg bg-[#2e323c] border border-[#3a3f4a] text-[#dce0e6] placeholder-[#6b7280] font-sans text-sm focus:outline-none focus:border-[#9ab8ff] focus:bg-[#353945] transition-colors"
+    />
+  </div>
+  <p id="writeup-count" class="mt-2 text-xs font-mono text-[#9aa1ae]">
+    {writeups.length} writeups
+  </p>
+</div>
+
+<div id="writeup-grid" class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+  {writeups.map((w) => (
+    <a
+      href={`/writeups/${w.id}/`}
+      data-writeup-id={w.id}
+      class="group flex flex-col rounded-lg border border-[#3a3f4a] bg-[#2e323c] hover:bg-[#353945] hover:border-[#9ab8ff] transition-colors overflow-hidden"
+    >
+      {w.data.image ? (
+        <div class="aspect-square w-full overflow-hidden bg-[#262932]">
+          <img
+            src={w.data.image.src}
+            alt={w.data.title}
+            class="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-300"
+            loading="lazy"
+          />
+        </div>
+      ) : (
+        <div class="aspect-square w-full bg-[#262932] flex items-center justify-center">
+          <span class="font-mono text-xs text-[#6b7280]">no image</span>
+        </div>
+      )}
+
+      <div class="flex flex-col flex-1 p-5 gap-3">
+        {w.data.date && (
+          <p class="text-center text-xs font-mono text-[#9aa1ae]">
+            {formatDate(w.data.date)}
+          </p>
+        )}
+
+        <h2 class="text-center text-lg font-semibold text-white group-hover:text-[#9ab8ff] transition-colors leading-tight">
+          {w.data.title}
+        </h2>
+
+        <div class="flex flex-wrap justify-center gap-1.5">
+          {w.data.platform && (
+            <span class="text-xs font-mono px-2 py-0.5 rounded border border-[#3a3f4a] bg-[#2a2e38] text-[#9aa1ae]">
+              {w.data.platform}
+            </span>
+          )}
+          {w.data.difficulty && (
+            <span class:list={["text-xs font-mono px-2 py-0.5 rounded border", difficultyColor[w.data.difficulty]]}>
+              {w.data.difficulty}
+            </span>
+          )}
+          {w.data.os && (
+            <span class="text-xs font-mono px-2 py-0.5 rounded border border-[#3a3f4a] bg-[#2a2e38] text-[#9aa1ae]">
+              {w.data.os}
+            </span>
+          )}
+        </div>
+
+        {w.data.tags && w.data.tags.length > 0 && (
+          <div class="mt-auto pt-3 border-t border-[#3a3f4a] flex flex-wrap justify-center gap-x-2 gap-y-1">
+            {w.data.tags.slice(0, 5).map((tag) => (
+              <span class="text-xs font-mono text-[#9aa1ae]">#{tag}</span>
+            ))}
+            {w.data.tags.length > 5 && (
+              <span class="text-xs font-mono text-[#6b7280]">
+                +{w.data.tags.length - 5}
+              </span>
+            )}
+          </div>
+        )}
+      </div>
+    </a>
+  ))}
+</div>
+
+<p
+  id="writeup-empty"
+  class="hidden text-center text-[#9aa1ae] py-12 font-mono text-sm"
+>
+  No se han encontrado writeups :(
+</p>
+
+<nav
+  id="writeup-pagination"
+  class="mt-10 flex items-center justify-center gap-2 flex-wrap"
+  aria-label="Paginación"
+></nav>
+
+<script type="application/json" id="writeup-data" set:html={JSON.stringify(searchIndex)} />
+
+<script>
+  import Fuse from "fuse.js";
+
+  const PER_PAGE = 9;
+
+  const dataEl = document.getElementById("writeup-data");
+  const input = document.getElementById("writeup-search") as HTMLInputElement | null;
+  const grid = document.getElementById("writeup-grid");
+  const emptyMsg = document.getElementById("writeup-empty");
+  const countEl = document.getElementById("writeup-count");
+  const pagEl = document.getElementById("writeup-pagination");
+
+  if (dataEl && input && grid && emptyMsg && countEl && pagEl) {
+    const items: any[] = JSON.parse(dataEl.textContent || "[]");
+    const allIds: string[] = items.map((i) => i.id);
+
+    const cardMap: Record<string, HTMLElement> = {};
+    grid.querySelectorAll<HTMLElement>("[data-writeup-id]").forEach((el) => {
+      if (el.dataset.writeupId) cardMap[el.dataset.writeupId] = el;
+    });
+
+    const fuse = new Fuse(items, {
+      keys: [
+        { name: "title", weight: 0.5 },
+        { name: "tags", weight: 0.3 },
+        { name: "platform", weight: 0.1 },
+        { name: "os", weight: 0.05 },
+        { name: "difficulty", weight: 0.05 },
+      ],
+      threshold: 0.35,
+      ignoreLocation: true,
+    });
+
+    let filteredIds: string[] = [...allIds];
+    let currentPage = 1;
+
+    const renderPage = () => {
+      const totalPages = Math.max(1, Math.ceil(filteredIds.length / PER_PAGE));
+      if (currentPage > totalPages) currentPage = totalPages;
+
+      const start = (currentPage - 1) * PER_PAGE;
+      const end = start + PER_PAGE;
+      const visibleIds = new Set(filteredIds.slice(start, end));
+
+      for (const id of allIds) {
+        const card = cardMap[id];
+        if (!card) continue;
+        card.style.display = visibleIds.has(id) ? "" : "none";
+      }
+
+      // Contador
+      if (filteredIds.length === items.length) {
+        countEl.textContent = `${items.length} writeups`;
+      } else {
+        countEl.textContent = `${filteredIds.length} de ${items.length} writeups`;
+      }
+
+      // Mensaje vacío
+      emptyMsg.classList.toggle("hidden", filteredIds.length > 0);
+
+      // Paginación
+      pagEl.innerHTML = "";
+      if (totalPages <= 1) return;
+
+      const btnBase =
+        "px-3 py-1.5 rounded-md text-sm font-mono border transition-colors";
+      const btnIdle =
+        "border-[#3a3f4a] bg-[#2e323c] text-[#9aa1ae] hover:border-[#9ab8ff] hover:text-[#9ab8ff]";
+      const btnActive =
+        "border-[#9ab8ff] bg-[#9ab8ff] text-[#262932] font-semibold";
+
+      const makeBtn = (label: string, page: number, disabled = false, active = false) => {
+        const b = document.createElement("button");
+        b.textContent = label;
+        b.className = `${btnBase} ${active ? btnActive : btnIdle} ${
+          disabled ? "opacity-40 cursor-not-allowed" : ""
+        }`;
+        if (!disabled && !active) {
+          b.addEventListener("click", () => {
+            currentPage = page;
+            renderPage();
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          });
+        }
+        return b;
+      };
+
+      // Anterior
+      pagEl.appendChild(makeBtn("←", currentPage - 1, currentPage === 1));
+
+      // Páginas (con elipsis si hay muchas)
+      const pages: (number | "…")[] = [];
+      if (totalPages <= 7) {
+        for (let i = 1; i <= totalPages; i++) pages.push(i);
+      } else {
+        pages.push(1);
+        if (currentPage > 3) pages.push("…");
+        for (
+          let i = Math.max(2, currentPage - 1);
+          i <= Math.min(totalPages - 1, currentPage + 1);
+          i++
+        ) {
+          pages.push(i);
+        }
+        if (currentPage < totalPages - 2) pages.push("…");
+        pages.push(totalPages);
+      }
+
+      for (const p of pages) {
+        if (p === "…") {
+          const span = document.createElement("span");
+          span.textContent = "…";
+          span.className = "px-2 text-[#6b7280] font-mono text-sm";
+          pagEl.appendChild(span);
+        } else {
+          pagEl.appendChild(makeBtn(String(p), p, false, p === currentPage));
+        }
+      }
+
+      // Siguiente
+      pagEl.appendChild(
+        makeBtn("→", currentPage + 1, currentPage === totalPages)
+      );
+    };
+
+    input.addEventListener("input", (e) => {
+      const q = (e.target as HTMLInputElement).value.trim();
+      filteredIds = q ? fuse.search(q).map((r) => r.item.id) : [...allIds];
+      currentPage = 1;
+      renderPage();
+    });
+
+    renderPage();
+  }
+</script>

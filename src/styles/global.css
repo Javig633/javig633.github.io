@@ -1,0 +1,491 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
+
+  /* Paleta custom del sitio */
+  --color-bg: #262932;
+  --color-surface: #2e323c;
+  --color-surface-2: #353945;
+  --color-border: #3a3f4a;
+  --color-fg: #dce0e6;
+  --color-fg-muted: #9aa1ae;
+  --color-accent: #9ab8ff;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    background-color: var(--color-bg);
+    color: var(--color-fg);
+    font-family: var(--font-sans);
+  }
+
+  h1, h2, h3, h4 {
+    font-weight: 600;
+    letter-spacing: -0.025em;
+    color: #ffffff;
+  }
+
+  a {
+    transition: color 0.15s ease;
+  }
+
+  ::selection {
+    background-color: var(--color-accent);
+    color: #262932;
+  }
+}
+
+/* ============================
+   Estilos para writeups (Markdown)
+   ============================ */
+
+.prose-custom {
+  color: var(--color-fg);
+  line-height: 1.7;
+  font-size: 1rem;
+}
+
+.prose-custom h1 {
+  font-size: 1.875rem;
+  font-weight: 700;
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+  color: #fff;
+}
+
+.prose-custom h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-top: 2rem;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--color-border);
+  color: #fff;
+}
+
+.prose-custom h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+  color: #fff;
+}
+
+.prose-custom p {
+  margin: 1rem 0;
+}
+
+.prose-custom a {
+  color: var(--color-accent);
+  text-decoration: none;
+}
+
+.prose-custom a:hover {
+  text-decoration: underline;
+}
+
+.prose-custom ul,
+.prose-custom ol {
+  margin: 1rem 0;
+  padding-left: 1.5rem;
+}
+
+.prose-custom ul { list-style: disc; }
+.prose-custom ol { list-style: decimal; }
+
+.prose-custom li {
+  margin: 0.25rem 0;
+}
+
+.prose-custom code {
+  background-color: var(--color-surface-2);
+  color: #a8c7ff;  /* azul clarito en vez de rosa */
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+  font-family: var(--font-mono);
+}
+
+.prose-custom pre {
+  background-color: #1d2028;
+  border: 1px solid var(--color-border);
+  color: var(--color-fg);
+  padding: 1rem;
+  border-radius: 0.5rem;
+  overflow-x: auto;
+  margin: 1.5rem 0;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.prose-custom pre code {
+  background-color: transparent;
+  padding: 0;
+  color: inherit;
+}
+
+.prose-custom blockquote {
+  border-left: 4px solid #4a505e;
+  padding: 0.5rem 0 0.5rem 1rem;
+  font-style: italic;
+  color: #c4cad4;  /* más claro que antes */
+  margin: 1rem 0;
+}
+
+.prose-custom img {
+  display: block;
+  margin: 1.5rem auto;
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.5rem;
+  border: 1px solid var(--color-border);
+}
+
+.prose-custom table {
+  width: 100%;
+  margin: 1.5rem 0;
+  font-size: 0.875rem;
+  border-collapse: collapse;
+}
+
+.prose-custom th,
+.prose-custom td {
+  border: 1px solid var(--color-border);
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+}
+
+.prose-custom th {
+  background-color: var(--color-surface);
+  font-weight: 600;
+}
+
+.prose-custom hr {
+  border: none;
+  border-top: 1px solid var(--color-border);
+  margin: 2rem 0;
+}
+
+/* ============================
+   Code blocks estilo terminal
+   ============================ */
+
+.prose-custom pre {
+  position: relative;
+  padding: 2.75rem 1rem 1rem;
+  background-color: #1d2028 !important;
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  overflow-x: auto;
+  margin: 1.5rem 0;
+  font-size: 0.875rem;
+  line-height: 1.55;
+  font-family: var(--font-mono);
+}
+
+/* Barra superior con los tres circulitos */
+.prose-custom pre::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2rem;
+  background-color: #252830;
+  border-bottom: 1px solid var(--color-border);
+  border-radius: 0.5rem 0.5rem 0 0;
+  background-image:
+    radial-gradient(circle at center, #ff5f57 4.5px, transparent 5px),
+    radial-gradient(circle at center, #febc2e 4.5px, transparent 5px),
+    radial-gradient(circle at center, #28c840 4.5px, transparent 5px);
+  background-size: 20px 100%;
+  background-position: 14px center, 34px center, 54px center;
+  background-repeat: no-repeat;
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* Cabecera inyectada por JS: lenguaje a la izq, botón a la der */
+.code-header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 0.75rem 0 5rem; /* deja hueco a los circulitos */
+  pointer-events: none;
+  z-index: 3;
+}
+
+.code-header > * {
+  pointer-events: auto;
+}
+
+.code-lang {
+  font-size: 0.7rem;
+  color: #9aa1ae;
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.code-expand-btn {
+  font-size: 0.65rem;
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #9aa1ae;
+  background: #353945;
+  border: 1px solid #3a3f4a;
+  padding: 0.15rem 0.55rem;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  line-height: 1.4;
+}
+
+.code-expand-btn:hover {
+  color: #9ab8ff;
+  border-color: #9ab8ff;
+}
+
+/* Estado colapsado */
+.prose-custom pre.is-collapsible.is-collapsed {
+  max-height: 400px;
+  overflow-y: hidden;
+  overflow-x: auto;
+}
+
+/* Degradado que avisa de que hay más contenido abajo */
+.prose-custom pre.is-collapsible.is-collapsed::after {
+  content: "";
+  position: absolute;
+  left: 1px;
+  right: 1px;
+  bottom: 1px;
+  height: 90px;
+  background: linear-gradient(to bottom, transparent 0%, #1d2028 95%);
+  pointer-events: none;
+  border-radius: 0 0 0.5rem 0.5rem;
+  z-index: 1;
+}
+
+.prose-custom pre code {
+  background-color: transparent;
+  padding: 0;
+  color: inherit;
+  font-size: inherit;
+}
+
+/* Scrollbar sutil dentro de los bloques */
+.prose-custom pre::-webkit-scrollbar {
+  height: 8px;
+}
+.prose-custom pre::-webkit-scrollbar-track {
+  background: transparent;
+}
+.prose-custom pre::-webkit-scrollbar-thumb {
+  background: #3a3f4a;
+  border-radius: 4px;
+}
+.prose-custom pre::-webkit-scrollbar-thumb:hover {
+  background: #4a505e;
+}
+
+
+/* ============================
+   Callouts (rehype-callouts)
+   ============================ */
+
+.callout {
+  margin: 1.5rem 0;
+  border-radius: 0.5rem;
+  border: 1px solid #3a3f4a;
+  background-color: #2e323c;
+  padding: 0.9rem 1rem;
+  --callout-color: #6b7280;
+  border-left: 4px solid var(--callout-color);
+}
+
+.callout-title {
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--callout-color);
+}
+
+.callout-title-icon {
+  display: inline-flex;
+  width: 1rem;
+  height: 1rem;
+}
+
+.callout-content > *:first-child { margin-top: 0; }
+.callout-content > *:last-child { margin-bottom: 0; }
+.callout-content p { margin: 0.5rem 0; color: #dce0e6; }
+
+/* Colores por tipo */
+.callout[data-callout="note"],
+.callout[data-callout="info"] {
+  --callout-color: #9ab8ff;
+  background-color: #2b3140;
+}
+.callout[data-callout="tip"],
+.callout[data-callout="success"],
+.callout[data-callout="cewl"] {
+  --callout-color: #8fd48f;
+  background-color: #2a352b;
+}
+.callout[data-callout="warning"],
+.callout[data-callout="caution"] {
+  --callout-color: #e5c07b;
+  background-color: #383024;
+}
+.callout[data-callout="danger"],
+.callout[data-callout="error"],
+.callout[data-callout="bug"],
+.callout[data-callout="failure"] {
+  --callout-color: #e88a8a;
+  background-color: #3a2a2a;
+}
+.callout[data-callout="question"],
+.callout[data-callout="example"],
+.callout[data-callout="quote"] {
+  --callout-color: #c79ae5;
+  background-color: #352b3d;
+}
+
+
+
+/* ============================
+   TOC (índice lateral)
+   ============================ */
+
+.toc-tree {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  border-left: 1px solid #3a3f4a;
+}
+
+.toc-tree-nested {
+  list-style: none;
+  border-left: none;
+  padding-left: 0.75rem;
+  margin-left: 0.35rem;
+  transition: opacity 0.15s ease;
+}
+
+.toc-link {
+  display: block;
+  padding: 0.3rem 0 0.3rem 0.75rem;
+  font-size: 0.85rem;
+  line-height: 1.35;
+  color: #9aa1ae;
+  border-left: 2px solid transparent;
+  margin-left: -1px;
+  transition: color 0.15s, border-color 0.15s;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.toc-link:hover {
+  color: #dce0e6;
+}
+
+.toc-link.toc-active {
+  color: #9ab8ff;
+  border-left-color: #9ab8ff;
+  font-weight: 500;
+}
+
+/* Subniveles: más pequeños y con más indentación */
+.toc-tree-nested .toc-link {
+  font-size: 0.8rem;
+}
+.toc-tree-nested .toc-tree-nested .toc-link {
+  font-size: 0.75rem;
+}
+
+/* ---------- Colapso automático ---------- */
+/* Por defecto, todo expandido (fallback si JS aún no ha corrido) */
+li[data-has-children="true"] > .toc-tree-nested {
+  display: block;
+}
+
+/* Cuando el li no contiene el heading activo, escondemos sus hijos */
+li[data-has-children="true"][data-expanded="false"] > .toc-tree-nested {
+  display: none;
+}
+
+/* Anclas: que no queden pegadas arriba al hacer clic en el TOC */
+.prose-custom :is(h1, h2, h3, h4) {
+  scroll-margin-top: 2rem;
+}
+
+
+/* ============================
+   Rail de categorías (recursos / herramientas)
+   ============================ */
+
+.rail-link.rail-active {
+  color: #9ab8ff;
+  border-left-color: #9ab8ff;
+  font-weight: 500;
+}
+
+/* Los callouts dentro de las páginas normales (no writeups) */
+.callout .callout-content a {
+  color: #9ab8ff;
+}
+
+
+
+/* ============================
+   Iconos de herramientas
+   ============================ */
+
+.tool-icon {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #353945;
+  border: 1px solid #3a3f4a;
+  border-radius: 8px;
+}
+
+.tool-icon-img {
+  width: 26px;
+  height: 26px;
+  object-fit: contain;
+}
+
+.tool-icon-letter {
+  display: none;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: #9ab8ff;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.tool-icon.is-fallback .tool-icon-letter {
+  display: block;
+}

@@ -1,0 +1,39 @@
+name: Deploy to GitHub Pages
+
+on:
+  # Se ejecuta cada vez que haces push a la rama `main`
+  push:
+    branches: [main]
+  # Permite ejecutarlo manualmente desde la pestaña de Actions en GitHub
+  workflow_dispatch:
+
+# Permisos necesarios para que el workflow pueda desplegar en GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout your repository using git
+        uses: actions/checkout@v7
+
+      - name: Install, build, and upload your site
+        uses: withastro/action@v6
+        # with:
+        #   path: .                # Ubicación del proyecto en el repo (opcional)
+        #   node-version: 24       # Versión de Node a usar (opcional, por defecto 24)
+        #   package-manager: npm   # Gestor de paquetes (opcional, se detecta solo)
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

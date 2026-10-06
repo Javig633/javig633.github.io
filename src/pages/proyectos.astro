@@ -1,0 +1,145 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { projects } from "../data/projects";
+
+const statusLabel: Record<string, string> = {
+  active: "Activo",
+  wip: "En desarrollo",
+  archived: "Archivado",
+};
+
+const statusColor: Record<string, string> = {
+  active: "bg-[#2d3b2d] text-[#8fd48f] border-[#3e5140]",
+  wip: "bg-[#3b3526] text-[#e5c07b] border-[#514a35]",
+  archived: "bg-[#2e323c] text-[#9aa1ae] border-[#3a3f4a]",
+};
+
+// Paleta de gradientes para los banners sin imagen
+const gradients = [
+  "linear-gradient(135deg, #2a3550 0%, #1e2027 100%)",
+  "linear-gradient(135deg, #3a2540 0%, #1e2027 100%)",
+  "linear-gradient(135deg, #2d3b2d 0%, #1e2027 100%)",
+  "linear-gradient(135deg, #3b2a2a 0%, #1e2027 100%)",
+  "linear-gradient(135deg, #2b3a40 0%, #1e2027 100%)",
+  "linear-gradient(135deg, #3b3526 0%, #1e2027 100%)",
+];
+---
+
+<BaseLayout
+  title="Proyectos — Mi Portfolio"
+  description="Proyectos de ciberseguridad y desarrollo"
+  wide
+>
+  <div class="max-w-7xl mx-auto">
+    <section class="mb-8">
+      <p class="font-mono text-sm text-[#9ab8ff] mb-3">$ ls proyectos/</p>
+      <div class="callout" data-callout="info">
+        <div class="callout-title">Sobre estos proyectos</div>
+        <div class="callout-content">
+          <p>
+            Herramientas y proyectos personales que he ido construyendo. La mayoría nacen
+            de necesidades reales en laboratorios, CTFs o el día a día. Todo es open source
+            y está disponible en mi GitHub.<br><br> LOS PROYECTOS DE AQUI ABAJO SON UN EJEMPLO AUN NO HAY NINGUNO PUBLICADO.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    {projects.length === 0 ? (
+      <p class="text-[#9aa1ae]">Todavía no hay proyectos publicados.</p>
+    ) : (
+      <div class="grid gap-6 sm:grid-cols-2">
+        {projects.map((project, i) => (
+          <article class="group flex flex-col rounded-lg border border-[#3a3f4a] bg-[#2e323c] hover:border-[#9ab8ff] transition-colors overflow-hidden">
+            {/* Banner */}
+            {project.image ? (
+              <div class="aspect-[16/9] w-full overflow-hidden bg-[#262932]">
+                <img
+                  src={project.image}
+                  alt={project.name}
+                  class="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-300"
+                  loading="lazy"
+                />
+              </div>
+            ) : (
+              <div
+                class="aspect-[16/9] w-full flex items-center justify-center"
+                style={`background: ${gradients[i % gradients.length]}`}
+              >
+                <span class="text-5xl font-bold text-white/20 font-mono select-none">
+                  {project.name.charAt(0).toUpperCase()}
+                </span>
+              </div>
+            )}
+
+            {/* Contenido */}
+            <div class="flex flex-col flex-1 p-5 gap-3">
+              {/* Cabecera: título + badge de estado */}
+              <div class="flex items-start justify-between gap-3">
+                <div class="min-w-0">
+                  <h2 class="text-lg font-semibold text-white leading-tight mb-0.5">
+                    {project.name}
+                  </h2>
+                  <p class="text-sm text-[#9ab8ff] font-mono">
+                    {project.tagline}
+                  </p>
+                </div>
+                {project.status && (
+                  <span
+                    class:list={[
+                      "text-[10px] font-mono px-2 py-0.5 rounded border shrink-0 uppercase tracking-wider",
+                      statusColor[project.status],
+                    ]}
+                  >
+                    {statusLabel[project.status]}
+                  </span>
+                )}
+              </div>
+
+              {/* Descripción */}
+              <p class="text-sm text-[#9aa1ae] leading-relaxed flex-1">
+                {project.description}
+              </p>
+
+              {/* Stack */}
+              {project.stack && project.stack.length > 0 && (
+                <div class="flex flex-wrap gap-1.5 pt-2 border-t border-[#3a3f4a]">
+                  {project.stack.map((tech) => (
+                    <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#353945] text-[#9aa1ae]">
+                      #{tech}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {/* Enlaces */}
+              <div class="flex flex-wrap gap-2 pt-2">
+                <a
+                  href={project.github}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="inline-flex items-center gap-1.5 text-xs font-mono px-2.5 py-1 rounded border border-[#3a3f4a] text-[#dce0e6] hover:border-[#9ab8ff] hover:text-[#9ab8ff] transition-colors"
+                >
+                  <svg viewBox="0 0 24 24" fill="currentColor" class="w-3.5 h-3.5">
+                    <path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.11.79-.25.79-.55v-1.93c-3.2.7-3.88-1.54-3.88-1.54-.52-1.33-1.28-1.69-1.28-1.69-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.68 0-1.26.45-2.29 1.19-3.1-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.18 1.19.92-.26 1.91-.39 2.9-.39s1.98.13 2.9.39c2.21-1.5 3.18-1.19 3.18-1.19.63 1.59.23 2.76.11 3.05.74.81 1.19 1.84 1.19 3.1 0 4.41-2.69 5.38-5.25 5.67.41.36.78 1.06.78 2.14v3.17c0 .3.21.67.8.55A11.5 11.5 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5z" />
+                  </svg>
+                  GitHub
+                </a>
+                {project.demo && (
+                  <a
+                    href={project.demo}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="inline-flex items-center gap-1.5 text-xs font-mono px-2.5 py-1 rounded border border-[#3a3f4a] text-[#dce0e6] hover:border-[#9ab8ff] hover:text-[#9ab8ff] transition-colors"
+                  >
+                    Demo ↗
+                  </a>
+                )}
+              </div>
+            </div>
+          </article>
+        ))}
+      </div>
+    )}
+  </div>
+</BaseLayout>

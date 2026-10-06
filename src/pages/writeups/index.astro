@@ -1,0 +1,28 @@
+---
+import { getCollection } from "astro:content";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import WriteupSearch from "../../components/WriteupSearch.astro";
+
+const writeups = (await getCollection("writeups")).sort((a, b) => {
+  const dateA = a.data.date?.getTime() ?? 0;
+  const dateB = b.data.date?.getTime() ?? 0;
+  return dateB - dateA;
+});
+---
+
+<BaseLayout title="Writeups — Mi Portfolio" description="Writeups de máquinas y CTFs">
+  <section class="max-w-3xl mb-10">
+    <p class="font-mono text-sm text-[#9ab8ff] mb-3">$ ls writeups/</p>
+    <h1 class="text-3xl font-bold mb-3 text-white">Writeups</h1>
+    <p class="text-[#9aa1ae] leading-relaxed">
+      Writeups de máquinas de HackTheBox, TryHackMe y CTFs. Cada uno documenta el
+      reconocimiento, la explotación y la escalada de privilegios paso a paso.
+    </p>
+  </section>
+
+  {writeups.length === 0 ? (
+    <p class="text-[#9aa1ae]">Todavía no hay writeups publicados.</p>
+  ) : (
+    <WriteupSearch writeups={writeups} />
+  )}
+</BaseLayout>
