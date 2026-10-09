@@ -78,11 +78,16 @@ function buildTocTree(hs: typeof headings): TocNode[] {
 const tocHeadings = headings.filter((h) => h.depth <= 3);
 const tocTree = buildTocTree(tocHeadings);
 const hasToc = tocHeadings.length >= 3;
+
+const ogImage = writeup.data.image
+  ? new URL(writeup.data.image.src, Astro.site).toString()
+  : undefined;
 ---
 
 <BaseLayout
   title={`${writeup.data.title} — Writeups`}
   description={`Writeup de ${writeup.data.title}`}
+  image={ogImage}
   wide
 >
   <div class:list={[hasToc && "lg:grid lg:grid-cols-[220px_minmax(0,1fr)] lg:gap-10"]}>

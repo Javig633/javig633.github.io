@@ -8,7 +8,7 @@ import { unified } from "@astrojs/markdown-remark";
 
 // https://astro.build/config
 export default defineConfig({
-  site: "https://javig633.github.io",
+  site: "https://0xskunk.github.io",
 
   integrations: [mdx(), sitemap()],
 

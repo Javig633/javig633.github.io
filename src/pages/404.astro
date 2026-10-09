@@ -1,0 +1,33 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+---
+
+<BaseLayout title="404 — No encontrado" description="Página no encontrada" wide>
+  <section class="max-w-2xl mx-auto text-center py-20">
+    <p class="font-mono text-sm text-[#9ab8ff] mb-3">$ cat 404.txt</p>
+    <h1 class="text-7xl font-bold text-white mb-4">404</h1>
+    <p class="text-lg text-[#9aa1ae] mb-10 leading-relaxed">
+      Esta página no existe. Puede que se haya movido, que nunca haya estado aquí,
+      o que te hayas equivocado al escribir la URL.
+    </p>
+
+    <div class="flex flex-wrap justify-center gap-3">
+      <a
+        href="/"
+        class="px-4 py-2 bg-[#9ab8ff] text-[#262932] rounded-lg text-sm font-medium hover:bg-[#b0c7ff] transition-colors"
+      >
+        ← Volver al inicio
+      </a>
+      <a
+        href="/writeups"
+        class="px-4 py-2 border border-[#3a3f4a] rounded-lg text-sm font-medium text-[#dce0e6] hover:bg-[#2e323c] transition-colors"
+      >
+        Ver writeups
+      </a>
+    </div>
+
+    <p class="mt-16 font-mono text-xs text-[#6b7280]">
+      <span class="text-[#8fd48f]">exit code:</span> 404 · <span class="text-[#9aa1ae]">file not found</span>
+    </p>
+  </section>
+</BaseLayout>
