@@ -30,6 +30,23 @@ function formatDate(date: Date | undefined): string {
   });
 }
 
+function formatDateShort(date: Date | undefined): string {
+  if (!date) return "";
+  return date.toLocaleDateString("es-ES", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+function starFill(starIndex: number, rating: number): number {
+  return Math.max(0, Math.min(100, (rating - starIndex) * 100));
+}
+
+const STAR_POINTS =
+  "12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2";
+const starIndexes = [0, 1, 2, 3, 4];
+
 // --- Construir árbol de TOC ---
 interface TocNode {
   slug: string;
@@ -114,56 +131,157 @@ const ogImage = writeup.data.image
 
       <!-- Cabecera del writeup -->
       <header class="mb-10">
-        {writeup.data.image && (
-          <div class="aspect-square w-full max-w-xs mx-auto mb-6 rounded-lg overflow-hidden border border-[#3a3f4a]">
-            <img
-              src={writeup.data.image.src}
-              alt={writeup.data.title}
-              class="w-full h-full object-cover"
-            />
+        <div class="rounded-xl border border-[#3a3f4a] bg-[#2e323c] overflow-hidden">
+          <!-- Fila superior: imagen + título + rating + badges -->
+          <div class="flex items-center gap-5 p-5 sm:p-6">
+            {writeup.data.image && (
+              writeup.data.imageShape === "square" ? (
+                <div class="w-20 h-20 sm:w-24 sm:h-24 rounded-lg overflow-hidden shrink-0">
+                  <img
+                    src={writeup.data.image.src}
+                    alt={writeup.data.title}
+                    class="w-full h-full object-cover"
+                  />
+                </div>
+              ) : (
+                <div class="w-20 h-20 sm:w-24 sm:h-24 shrink-0 flex items-center justify-center">
+                  <img
+                    src={writeup.data.image.src}
+                    alt={writeup.data.title}
+                    class="w-full h-full object-contain"
+                  />
+                </div>
+              )
+            )}
+
+            <div class="flex-1 min-w-0">
+              <!-- Título + rating a la derecha -->
+              <div class="flex items-start justify-between gap-4 mb-2.5">
+                <h1 class="text-2xl sm:text-3xl font-bold text-white leading-tight">
+                  {writeup.data.title}
+                </h1>
+
+                {writeup.data.rating !== undefined && (
+                  <div class="flex items-center gap-2 shrink-0 pt-1">
+                    <div class="flex items-center gap-0.5">
+                      {starIndexes.map((i) => {
+                        const fill = starFill(i, writeup.data.rating!);
+                        return (
+                          <div class="relative w-4 h-4 shrink-0">
+                            <svg
+                              width="16"
+                              height="16"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="#4a505e"
+                              stroke-width="1.5"
+                              stroke-linejoin="round"
+                              stroke-linecap="round"
+                              class="absolute inset-0"
+                            >
+                              <polygon points={STAR_POINTS} />
+                            </svg>
+                            <div
+                              class="absolute inset-y-0 left-0 overflow-hidden"
+                              style={`width: ${fill}%`}
+                            >
+                              <svg
+                                width="16"
+                                height="16"
+                                viewBox="0 0 24 24"
+                                fill="#e5c07b"
+                                stroke="#e5c07b"
+                                stroke-width="1.5"
+                                stroke-linejoin="round"
+                                stroke-linecap="round"
+                              >
+                                <polygon points={STAR_POINTS} />
+                              </svg>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <span class="text-sm font-mono text-[#dce0e6]">
+                      {writeup.data.rating.toFixed(1)}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              <!-- Badges -->
+              <div class="flex flex-wrap gap-1.5">
+                {writeup.data.platform && (
+                  <span class="text-xs font-mono px-2.5 py-1 rounded border border-[#3a3f4a] bg-[#2a2e38] text-[#9aa1ae]">
+                    {writeup.data.platform}
+                  </span>
+                )}
+                {writeup.data.difficulty && (
+                  <span
+                    class:list={[
+                      "text-xs font-mono px-2.5 py-1 rounded border",
+                      difficultyColor[writeup.data.difficulty],
+                    ]}
+                  >
+                    {writeup.data.difficulty}
+                  </span>
+                )}
+                {writeup.data.os && (
+                  <span class="text-xs font-mono px-2.5 py-1 rounded border border-[#3a3f4a] bg-[#2a2e38] text-[#9aa1ae]">
+                    {writeup.data.os}
+                  </span>
+                )}
+              </div>
+            </div>
           </div>
-        )}
 
-        <h1 class="text-3xl font-bold text-white mb-4 text-center">
-          {writeup.data.title}
-        </h1>
+          <!-- Meta grid: Released / Completada / Rank -->
+          {(writeup.data.releaseDate || writeup.data.date || writeup.data.userRank) && (
+            <div class="grid grid-cols-3 border-t border-[#3a3f4a] divide-x divide-[#3a3f4a]">
+              <div class="px-4 sm:px-5 py-4">
+                <p class="text-[10px] uppercase tracking-[0.15em] font-mono text-[#6b7280] mb-1.5">
+                  Released
+                </p>
+                <p class="text-sm font-mono text-[#dce0e6]">
+                  {writeup.data.releaseDate
+                    ? formatDateShort(writeup.data.releaseDate)
+                    : "—"}
+                </p>
+              </div>
 
-        {writeup.data.date && (
-          <p class="text-center text-sm font-mono text-[#9aa1ae] mb-4">
-            {formatDate(writeup.data.date)}
-          </p>
-        )}
+              <div class="px-4 sm:px-5 py-4">
+                <p class="text-[10px] uppercase tracking-[0.15em] font-mono text-[#6b7280] mb-1.5">
+                  Completada
+                </p>
+                <p class="text-sm font-mono text-[#9ab8ff]">
+                  {writeup.data.date
+                    ? formatDateShort(writeup.data.date)
+                    : "—"}
+                </p>
+              </div>
 
-        <div class="flex flex-wrap justify-center gap-1.5 mb-4">
-          {writeup.data.platform && (
-            <span class="text-xs font-mono px-2 py-0.5 rounded border border-[#3a3f4a] bg-[#2a2e38] text-[#9aa1ae]">
-              {writeup.data.platform}
-            </span>
+              <div class="px-4 sm:px-5 py-4">
+                <p class="text-[10px] uppercase tracking-[0.15em] font-mono text-[#6b7280] mb-1.5">
+                  Mi rank
+                </p>
+                <p class="text-sm font-mono text-[#dce0e6]">
+                  {writeup.data.userRank
+                    ? `#${writeup.data.userRank}`
+                    : "—"}
+                </p>
+              </div>
+            </div>
           )}
-          {writeup.data.difficulty && (
-            <span
-              class:list={[
-                "text-xs font-mono px-2 py-0.5 rounded border",
-                difficultyColor[writeup.data.difficulty],
-              ]}
-            >
-              {writeup.data.difficulty}
-            </span>
-          )}
-          {writeup.data.os && (
-            <span class="text-xs font-mono px-2 py-0.5 rounded border border-[#3a3f4a] bg-[#2a2e38] text-[#9aa1ae]">
-              {writeup.data.os}
-            </span>
+
+          <!-- Tags -->
+          {writeup.data.tags && writeup.data.tags.length > 0 && (
+            <div class="px-5 sm:px-6 py-3.5 border-t border-[#3a3f4a] flex flex-wrap gap-x-2.5 gap-y-1">
+              {writeup.data.tags.map((tag) => (
+                <span class="text-xs font-mono text-[#9aa1ae]">#{tag}</span>
+              ))}
+            </div>
           )}
         </div>
-
-        {writeup.data.tags && writeup.data.tags.length > 0 && (
-          <div class="flex flex-wrap justify-center gap-x-2 gap-y-1">
-            {writeup.data.tags.map((tag) => (
-              <span class="text-xs font-mono text-[#9aa1ae]">#{tag}</span>
-            ))}
-          </div>
-        )}
       </header>
 
       <!-- Contenido -->
@@ -173,47 +291,161 @@ const ogImage = writeup.data.image
     </article>
   </div>
 
+      <!-- Botón volver arriba -->
+    <button
+      id="back-to-top"
+      type="button"
+      aria-label="Volver arriba"
+      class="back-to-top"
+    >
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        class="w-5 h-5"
+      >
+        <path d="M12 19V5M5 12l7-7 7 7" />
+      </svg>
+    </button>
+
  <script>
-    // ---------- Code blocks expand/collapse ----------
-    function initCodeBlocks() {
-      const COLLAPSE_HEIGHT = 400;
+  // ---------- Botón volver arriba ----------
+function initBackToTop() {
+  const btn = document.getElementById("back-to-top");
+  if (!btn) return;
 
-      document
-        .querySelectorAll<HTMLPreElement>(".prose-custom pre")
-        .forEach((pre) => {
-          if (pre.dataset.processed === "true") return;
-          pre.dataset.processed = "true";
+  if (btn.dataset.bound === "true") return;
+  btn.dataset.bound = "true";
 
-          const lang = pre.dataset.language || "";
+  const SHOW_AFTER = 400; // px de scroll a partir de los cuales aparece
 
-          const header = document.createElement("div");
-          header.className = "code-header";
-
-          const langLabel = document.createElement("span");
-          langLabel.className = "code-lang";
-          langLabel.textContent = lang;
-          header.appendChild(langLabel);
-
-          const fullHeight = pre.scrollHeight;
-
-          if (fullHeight > COLLAPSE_HEIGHT) {
-            pre.classList.add("is-collapsible", "is-collapsed");
-
-            const btn = document.createElement("button");
-            btn.type = "button";
-            btn.className = "code-expand-btn";
-            btn.textContent = "Expand";
-            btn.addEventListener("click", () => {
-              const isCollapsed = pre.classList.toggle("is-collapsed");
-              btn.textContent = isCollapsed ? "Expand" : "Collapse";
-            });
-
-            header.appendChild(btn);
-          }
-
-          pre.appendChild(header);
-        });
+  const update = () => {
+    if (window.scrollY > SHOW_AFTER) {
+      btn.classList.add("back-to-top--visible");
+    } else {
+      btn.classList.remove("back-to-top--visible");
     }
+  };
+
+  let ticking = false;
+  const onScroll = () => {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(() => {
+      update();
+      ticking = false;
+    });
+  };
+
+  btn.addEventListener("click", () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  });
+
+  window.addEventListener("scroll", onScroll, { passive: true });
+  update();
+}
+    // ---------- Code blocks expand/collapse ----------
+function initCodeBlocks() {
+  const COLLAPSE_HEIGHT = 400;
+
+  document
+    .querySelectorAll<HTMLPreElement>(".prose-custom pre")
+    .forEach((pre) => {
+      if (pre.dataset.processed === "true") return;
+      pre.dataset.processed = "true";
+
+      const lang = pre.dataset.language || "";
+
+      // Envolver el pre en un wrapper
+      const wrapper = document.createElement("div");
+      wrapper.className = "code-block";
+      pre.parentNode?.insertBefore(wrapper, pre);
+      wrapper.appendChild(pre);
+
+      const header = document.createElement("div");
+      header.className = "code-header";
+
+      const langLabel = document.createElement("span");
+      langLabel.className = "code-lang";
+      langLabel.textContent = lang;
+      header.appendChild(langLabel);
+
+      // Contenedor de acciones (copiar + expand) a la derecha
+      const actions = document.createElement("div");
+      actions.className = "code-actions";
+
+      // --- Botón copiar ---
+      const copyBtn = document.createElement("button");
+      copyBtn.type = "button";
+      copyBtn.className = "code-action-btn code-copy-btn";
+      copyBtn.setAttribute("aria-label", "Copiar código");
+      copyBtn.innerHTML = `
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="code-action-icon">
+          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+        </svg>
+        <span class="code-action-text">COPY</span>
+      `;
+
+      copyBtn.addEventListener("click", async () => {
+        const codeEl = pre.querySelector("code");
+        const text = codeEl?.textContent ?? "";
+        try {
+          await navigator.clipboard.writeText(text);
+          copyBtn.classList.add("code-action-btn--success");
+          const textSpan = copyBtn.querySelector(".code-action-text");
+          if (textSpan) textSpan.textContent = "COPIED";
+          setTimeout(() => {
+            copyBtn.classList.remove("code-action-btn--success");
+            if (textSpan) textSpan.textContent = "COPY";
+          }, 1500);
+        } catch {
+          // Fallback por si el navegador bloquea clipboard API
+          const range = document.createRange();
+          if (codeEl) {
+            range.selectNode(codeEl);
+            const sel = window.getSelection();
+            sel?.removeAllRanges();
+            sel?.addRange(range);
+            document.execCommand("copy");
+            sel?.removeAllRanges();
+            const textSpan = copyBtn.querySelector(".code-action-text");
+            if (textSpan) textSpan.textContent = "COPIED";
+            setTimeout(() => {
+              if (textSpan) textSpan.textContent = "COPY";
+            }, 1500);
+          }
+        }
+      });
+
+      actions.appendChild(copyBtn);
+
+      // --- Botón Expand (si es necesario) ---
+      const fullHeight = pre.scrollHeight;
+      if (fullHeight > COLLAPSE_HEIGHT) {
+        pre.classList.add("is-collapsible", "is-collapsed");
+        wrapper.classList.add("has-collapsed");
+
+        const expandBtn = document.createElement("button");
+        expandBtn.type = "button";
+        expandBtn.className = "code-action-btn code-expand-btn";
+        expandBtn.textContent = "Expand";
+        expandBtn.addEventListener("click", () => {
+          const isCollapsed = pre.classList.toggle("is-collapsed");
+          wrapper.classList.toggle("has-collapsed", isCollapsed);
+          expandBtn.textContent = isCollapsed ? "Expand" : "Collapse";
+        });
+
+        actions.appendChild(expandBtn);
+      }
+
+      header.appendChild(actions);
+      wrapper.appendChild(header);
+    });
+}
 
     // ---------- TOC scroll-spy + colapso ----------
     function initToc() {
@@ -306,5 +538,16 @@ debugHeadings.forEach((a) => {
     a.getAttribute("data-toc-link")
   );
 });
+  initCodeBlocks();
+  initToc();
+  initBackToTop();  // ← añadir esta línea
+
+  document.addEventListener("astro:page-load", () => {
+    initCodeBlocks();
+    initToc();
+    initBackToTop();  // ← añadir también aquí
+  });
   </script>
+
+
 </BaseLayout>

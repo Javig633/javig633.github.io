@@ -14,6 +14,13 @@ const difficultyColor: Record<string, string> = {
   Insane: "bg-[#3a2540] text-[#c79ae5] border-[#503360]",
 };
 
+const difficultyHex: Record<string, string> = {
+  Easy: "#8fd48f",
+  Medium: "#e5c07b",
+  Hard: "#e88a8a",
+  Insane: "#c79ae5",
+};
+
 function formatDate(date: Date | undefined): string {
   if (!date) return "";
   return date.toLocaleDateString("es-ES", {
@@ -31,24 +38,147 @@ const searchIndex = writeups.map((w) => ({
   os: w.data.os ?? "",
   tags: w.data.tags ?? [],
 }));
+
+// ---------- Valores únicos para los filtros ----------
+function uniqueSorted(arr: (string | undefined)[]): string[] {
+  const clean = arr.filter((x): x is string => typeof x === "string");
+  return [...new Set(clean)].sort();
+}
+
+const availablePlatforms = uniqueSorted(
+  writeups.map((w) => w.data.platform)
+);
+
+const availableDifficulties = uniqueSorted(
+  writeups.map((w) => w.data.difficulty)
+);
+
+const difficultyOrder = ["Easy", "Medium", "Hard", "Insane"];
+availableDifficulties.sort(
+  (a, b) => difficultyOrder.indexOf(a) - difficultyOrder.indexOf(b)
+);
+
+// ---------- Stats ----------
+const DIFFICULTIES = ["Easy", "Medium", "Hard", "Insane"] as const;
+
+const stats = DIFFICULTIES.map((d) => {
+  const list = writeups.filter((w) => w.data.difficulty === d);
+  return { name: d, count: list.length, color: difficultyHex[d] };
+});
+
+const totalWithDifficulty = stats.reduce((sum, s) => sum + s.count, 0);
+
+const statsWithPct = stats.map((s) => ({
+  ...s,
+  pct: totalWithDifficulty > 0 ? (s.count / totalWithDifficulty) * 100 : 0,
+}));
+
+const RADIUS = 80;
+const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
+
+let acc = 0;
+const segments = statsWithPct
+  .filter((s) => s.count > 0)
+  .map((s) => {
+    const length = (s.pct / 100) * CIRCUMFERENCE;
+    const segment = {
+      ...s,
+      dashArray: `${length} ${CIRCUMFERENCE - length}`,
+      dashOffset: -acc,
+    };
+    acc += length;
+    return segment;
+  });
 ---
 
-<div class="mb-8">
-  <div class="relative">
-    <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#6b7280] font-mono text-sm pointer-events-none">
-      /
-    </span>
-    <input
-      id="writeup-search"
-      type="search"
-      placeholder="Buscar por nombre, plataforma, tags..."
-      autocomplete="off"
-      class="w-full pl-8 pr-4 py-3 rounded-lg bg-[#2e323c] border border-[#3a3f4a] text-[#dce0e6] placeholder-[#6b7280] font-sans text-sm focus:outline-none focus:border-[#9ab8ff] focus:bg-[#353945] transition-colors"
-    />
+<div class="mb-10 space-y-6">
+  <!-- Barra de búsqueda + Stats -->
+  <div class="max-w-5xl mx-auto">
+    <div class="flex gap-3 items-stretch">
+      <div class="relative flex-1">
+        <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#6b7280] font-mono text-sm pointer-events-none">
+          /
+        </span>
+        <input
+          id="writeup-search"
+          type="search"
+          placeholder="Buscar por nombre, plataforma, tags..."
+          autocomplete="off"
+          class="w-full h-full pl-8 pr-4 py-3 rounded-lg bg-[#2e323c] border border-[#3a3f4a] text-[#dce0e6] placeholder-[#6b7280] font-sans text-sm focus:outline-none focus:border-[#9ab8ff] focus:bg-[#353945] transition-colors"
+        />
+      </div>
+
+      <button
+        id="stats-toggle"
+        type="button"
+        aria-label="Ver estadísticas"
+        class="flex items-center gap-2 px-4 rounded-lg bg-[#2e323c] border border-[#3a3f4a] text-[#9aa1ae] hover:text-[#9ab8ff] hover:border-[#9ab8ff] transition-colors text-sm font-mono shrink-0"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          class="w-4 h-4"
+        >
+          <path d="M21.21 15.89A10 10 0 1 1 8 2.83" />
+          <path d="M22 12A10 10 0 0 0 12 2v10z" />
+        </svg>
+        <span class="hidden sm:inline">Stats</span>
+      </button>
+    </div>
   </div>
-  <p id="writeup-count" class="mt-2 text-xs font-mono text-[#9aa1ae]">
-    {writeups.length} writeups
-  </p>
+
+  <!-- Chips de filtros centrados -->
+  <div class="space-y-4">
+    {availablePlatforms.length > 0 && (
+      <div class="flex flex-wrap items-center justify-center gap-2">
+        <span class="text-xs font-mono text-[#6b7280] uppercase tracking-[0.2em] mr-2">
+          Plataforma
+        </span>
+        {availablePlatforms.map((p) => (
+          <button type="button" data-filter="platform" data-value={p} class="chip">
+            {p}
+          </button>
+        ))}
+      </div>
+    )}
+
+    {availableDifficulties.length > 0 && (
+      <div class="flex flex-wrap items-center justify-center gap-2">
+        <span class="text-xs font-mono text-[#6b7280] uppercase tracking-[0.2em] mr-2">
+          Dificultad
+        </span>
+        {availableDifficulties.map((d) => (
+          <button
+            type="button"
+            data-filter="difficulty"
+            data-value={d}
+            class="chip chip--difficulty"
+            style={`--chip-accent: ${difficultyHex[d]}`}
+          >
+            {d}
+          </button>
+        ))}
+      </div>
+    )}
+
+    <!-- Contador + limpiar filtros (centrados) -->
+    <div class="flex items-center justify-center gap-4 pt-2">
+      <p id="writeup-count" class="text-xs font-mono text-[#9aa1ae]">
+        {writeups.length} writeups
+      </p>
+      <button
+        id="clear-filters"
+        type="button"
+        class="hidden text-xs font-mono text-[#9ab8ff] hover:underline"
+      >
+        Limpiar filtros ×
+      </button>
+    </div>
+  </div>
 </div>
 
 <div id="writeup-grid" class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
@@ -59,14 +189,25 @@ const searchIndex = writeups.map((w) => ({
       class="group flex flex-col rounded-lg border border-[#3a3f4a] bg-[#2e323c] hover:bg-[#353945] hover:border-[#9ab8ff] transition-colors overflow-hidden"
     >
       {w.data.image ? (
-        <div class="aspect-square w-full overflow-hidden bg-[#262932]">
-          <img
-            src={w.data.image.src}
-            alt={w.data.title}
-            class="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-300"
-            loading="lazy"
-          />
-        </div>
+        w.data.imageShape === "square" ? (
+          <div class="aspect-square w-full overflow-hidden bg-[#262932]">
+            <img
+              src={w.data.image.src}
+              alt={w.data.title}
+              class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+              loading="lazy"
+            />
+          </div>
+        ) : (
+          <div class="aspect-square w-full bg-[#262932] p-6 flex items-center justify-center overflow-hidden">
+            <img
+              src={w.data.image.src}
+              alt={w.data.title}
+              class="w-full h-full object-contain group-hover:scale-110 transition-transform duration-500"
+              loading="lazy"
+            />
+          </div>
+        )
       ) : (
         <div class="aspect-square w-full bg-[#262932] flex items-center justify-center">
           <span class="font-mono text-xs text-[#6b7280]">no image</span>
@@ -95,11 +236,6 @@ const searchIndex = writeups.map((w) => ({
               {w.data.difficulty}
             </span>
           )}
-          {w.data.os && (
-            <span class="text-xs font-mono px-2 py-0.5 rounded border border-[#3a3f4a] bg-[#2a2e38] text-[#9aa1ae]">
-              {w.data.os}
-            </span>
-          )}
         </div>
 
         {w.data.tags && w.data.tags.length > 0 && (
@@ -119,18 +255,95 @@ const searchIndex = writeups.map((w) => ({
   ))}
 </div>
 
-<p
-  id="writeup-empty"
-  class="hidden text-center text-[#9aa1ae] py-12 font-mono text-sm"
->
+<p id="writeup-empty" class="hidden text-center text-[#9aa1ae] py-12 font-mono text-sm">
   No se han encontrado writeups :(
 </p>
 
-<nav
-  id="writeup-pagination"
-  class="mt-10 flex items-center justify-center gap-2 flex-wrap"
-  aria-label="Paginación"
-></nav>
+<nav id="writeup-pagination" class="mt-10 flex items-center justify-center gap-2 flex-wrap" aria-label="Paginación"></nav>
+
+<!-- ============================
+     MODAL DE ESTADÍSTICAS
+     ============================ -->
+<div id="stats-modal" class="stats-modal hidden" role="dialog" aria-modal="true" aria-labelledby="stats-title">
+  <div class="stats-backdrop" data-close-modal></div>
+
+  <div class="stats-panel">
+    <div class="flex items-center justify-between pb-4 mb-6 border-b border-[#3a3f4a]">
+      <div>
+        <p class="font-mono text-xs text-[#9ab8ff] mb-1">$ stats --machines</p>
+        <h2 id="stats-title" class="text-lg font-bold text-white">Estadísticas</h2>
+      </div>
+      <button
+        type="button"
+        data-close-modal
+        aria-label="Cerrar"
+        class="flex items-center justify-center w-8 h-8 rounded border border-[#3a3f4a] text-[#9aa1ae] hover:text-[#9ab8ff] hover:border-[#9ab8ff] transition-colors"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4">
+          <path d="M18 6 6 18M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+
+    {totalWithDifficulty === 0 ? (
+      <p class="text-center text-[#9aa1ae] py-8 font-mono text-sm">
+        Todavía no hay máquinas con dificultad registrada.
+      </p>
+    ) : (
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+        <div class="flex justify-center">
+          <div class="relative">
+            <svg viewBox="0 0 200 200" class="w-56 h-56">
+              <circle cx="100" cy="100" r={RADIUS} fill="none" stroke="#353945" stroke-width="26" />
+              {segments.map((s) => (
+                <circle
+                  cx="100"
+                  cy="100"
+                  r={RADIUS}
+                  fill="none"
+                  stroke={s.color}
+                  stroke-width="26"
+                  stroke-dasharray={s.dashArray}
+                  stroke-dashoffset={s.dashOffset}
+                  transform="rotate(-90 100 100)"
+                />
+              ))}
+              <text x="100" y="98" text-anchor="middle" font-size="34" font-weight="700" fill="#ffffff" font-family="Inter, sans-serif">
+                {totalWithDifficulty}
+              </text>
+              <text x="100" y="118" text-anchor="middle" font-size="11" fill="#9aa1ae" font-family="Inter, sans-serif">
+                máquinas
+              </text>
+            </svg>
+          </div>
+        </div>
+
+        <div class="space-y-5">
+          {statsWithPct.map((s) => (
+            <div class:list={[s.count === 0 && "opacity-40"]}>
+              <div class="flex items-center justify-between gap-3 mb-2">
+                <div class="flex items-center gap-2">
+                  <span class="w-2.5 h-2.5 rounded-full shrink-0" style={`background: ${s.color}`}></span>
+                  <span class="font-mono text-sm font-medium" style={`color: ${s.color}`}>
+                    {s.name}
+                  </span>
+                </div>
+                <div class="flex items-baseline gap-1.5">
+                  <span class="text-base font-semibold text-white">{s.count}</span>
+                  <span class="text-xs font-mono text-[#9aa1ae]">({s.pct.toFixed(0)}%)</span>
+                </div>
+              </div>
+
+              <div class="h-1.5 rounded-full bg-[#353945] overflow-hidden">
+                <div class="h-full rounded-full transition-all" style={`width: ${s.pct}%; background: ${s.color}`}></div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    )}
+  </div>
+</div>
 
 <script type="application/json" id="writeup-data" set:html={JSON.stringify(searchIndex)} />
 
@@ -145,6 +358,10 @@ const searchIndex = writeups.map((w) => ({
   const emptyMsg = document.getElementById("writeup-empty");
   const countEl = document.getElementById("writeup-count");
   const pagEl = document.getElementById("writeup-pagination");
+  const clearBtn = document.getElementById("clear-filters");
+  const chipEls = Array.from(
+    document.querySelectorAll<HTMLButtonElement>("button[data-filter]")
+  );
 
   if (dataEl && input && grid && emptyMsg && countEl && pagEl) {
     const items: any[] = JSON.parse(dataEl.textContent || "[]");
@@ -167,6 +384,22 @@ const searchIndex = writeups.map((w) => ({
       ignoreLocation: true,
     });
 
+    const activeFilters: Record<string, Set<string>> = {
+      platform: new Set(),
+      difficulty: new Set(),
+    };
+
+    const hasAnyFilter = () =>
+      activeFilters.platform.size > 0 || activeFilters.difficulty.size > 0;
+
+    const matchesChips = (item: any): boolean => {
+      if (activeFilters.platform.size > 0 && !activeFilters.platform.has(item.platform))
+        return false;
+      if (activeFilters.difficulty.size > 0 && !activeFilters.difficulty.has(item.difficulty))
+        return false;
+      return true;
+    };
+
     let filteredIds: string[] = [...allIds];
     let currentPage = 1;
 
@@ -184,33 +417,29 @@ const searchIndex = writeups.map((w) => ({
         card.style.display = visibleIds.has(id) ? "" : "none";
       }
 
-      // Contador
+      const filterCount = activeFilters.platform.size + activeFilters.difficulty.size;
+
       if (filteredIds.length === items.length) {
         countEl.textContent = `${items.length} writeups`;
       } else {
-        countEl.textContent = `${filteredIds.length} de ${items.length} writeups`;
+        const suffix = filterCount > 0 ? ` · ${filterCount} filtro${filterCount > 1 ? "s" : ""}` : "";
+        countEl.textContent = `${filteredIds.length} de ${items.length} writeups${suffix}`;
       }
 
-      // Mensaje vacío
       emptyMsg.classList.toggle("hidden", filteredIds.length > 0);
+      if (clearBtn) clearBtn.classList.toggle("hidden", filterCount === 0);
 
-      // Paginación
       pagEl.innerHTML = "";
       if (totalPages <= 1) return;
 
-      const btnBase =
-        "px-3 py-1.5 rounded-md text-sm font-mono border transition-colors";
-      const btnIdle =
-        "border-[#3a3f4a] bg-[#2e323c] text-[#9aa1ae] hover:border-[#9ab8ff] hover:text-[#9ab8ff]";
-      const btnActive =
-        "border-[#9ab8ff] bg-[#9ab8ff] text-[#262932] font-semibold";
+      const btnBase = "px-3 py-1.5 rounded-md text-sm font-mono border transition-colors";
+      const btnIdle = "border-[#3a3f4a] bg-[#2e323c] text-[#9aa1ae] hover:border-[#9ab8ff] hover:text-[#9ab8ff]";
+      const btnActive = "border-[#9ab8ff] bg-[#9ab8ff] text-[#262932] font-semibold";
 
       const makeBtn = (label: string, page: number, disabled = false, active = false) => {
         const b = document.createElement("button");
         b.textContent = label;
-        b.className = `${btnBase} ${active ? btnActive : btnIdle} ${
-          disabled ? "opacity-40 cursor-not-allowed" : ""
-        }`;
+        b.className = `${btnBase} ${active ? btnActive : btnIdle} ${disabled ? "opacity-40 cursor-not-allowed" : ""}`;
         if (!disabled && !active) {
           b.addEventListener("click", () => {
             currentPage = page;
@@ -221,21 +450,15 @@ const searchIndex = writeups.map((w) => ({
         return b;
       };
 
-      // Anterior
       pagEl.appendChild(makeBtn("←", currentPage - 1, currentPage === 1));
 
-      // Páginas (con elipsis si hay muchas)
       const pages: (number | "…")[] = [];
       if (totalPages <= 7) {
         for (let i = 1; i <= totalPages; i++) pages.push(i);
       } else {
         pages.push(1);
         if (currentPage > 3) pages.push("…");
-        for (
-          let i = Math.max(2, currentPage - 1);
-          i <= Math.min(totalPages - 1, currentPage + 1);
-          i++
-        ) {
+        for (let i = Math.max(2, currentPage - 1); i <= Math.min(totalPages - 1, currentPage + 1); i++) {
           pages.push(i);
         }
         if (currentPage < totalPages - 2) pages.push("…");
@@ -253,19 +476,203 @@ const searchIndex = writeups.map((w) => ({
         }
       }
 
-      // Siguiente
-      pagEl.appendChild(
-        makeBtn("→", currentPage + 1, currentPage === totalPages)
-      );
+      pagEl.appendChild(makeBtn("→", currentPage + 1, currentPage === totalPages));
     };
 
-    input.addEventListener("input", (e) => {
-      const q = (e.target as HTMLInputElement).value.trim();
-      filteredIds = q ? fuse.search(q).map((r) => r.item.id) : [...allIds];
+    const applyFilters = () => {
+      const q = input.value.trim();
+
+      let baseIds = allIds;
+      if (hasAnyFilter()) {
+        baseIds = items.filter(matchesChips).map((i: any) => i.id);
+      }
+
+      if (q) {
+        const searchIds = new Set(fuse.search(q).map((r) => r.item.id));
+        filteredIds = baseIds.filter((id) => searchIds.has(id));
+      } else {
+        filteredIds = baseIds;
+      }
+
       currentPage = 1;
       renderPage();
+    };
+
+    input.addEventListener("input", applyFilters);
+
+    chipEls.forEach((chip) => {
+      chip.addEventListener("click", () => {
+        const type = chip.dataset.filter;
+        const value = chip.dataset.value;
+        if (!type || !value) return;
+
+        const set = activeFilters[type];
+        if (set.has(value)) {
+          set.delete(value);
+          chip.classList.remove("chip--active");
+        } else {
+          set.add(value);
+          chip.classList.add("chip--active");
+        }
+
+        applyFilters();
+      });
     });
+
+    if (clearBtn) {
+      clearBtn.addEventListener("click", () => {
+        activeFilters.platform.clear();
+        activeFilters.difficulty.clear();
+        chipEls.forEach((c) => c.classList.remove("chip--active"));
+        applyFilters();
+      });
+    }
 
     renderPage();
   }
+
+  function initStatsModal() {
+    const toggle = document.getElementById("stats-toggle");
+    const modal = document.getElementById("stats-modal");
+    if (!toggle || !modal) return;
+    if (toggle.dataset.bound === "true") return;
+    toggle.dataset.bound = "true";
+
+    const openModal = () => {
+      modal.classList.remove("hidden");
+      modal.classList.add("stats-modal--open");
+      document.body.style.overflow = "hidden";
+    };
+
+    const closeModal = () => {
+      modal.classList.remove("stats-modal--open");
+      modal.classList.add("hidden");
+      document.body.style.overflow = "";
+    };
+
+    toggle.addEventListener("click", openModal);
+    modal.querySelectorAll("[data-close-modal]").forEach((el) => {
+      el.addEventListener("click", closeModal);
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && !modal.classList.contains("hidden")) {
+        closeModal();
+      }
+    });
+  }
+
+  initStatsModal();
+  document.addEventListener("astro:page-load", initStatsModal);
 </script>
+
+<style>
+  /* ============================
+     Chips de filtros
+     ============================ */
+.chip {
+  font-family: var(--font-mono);
+  font-size: 0.875rem;          /* antes: 0.75rem */
+  line-height: 1;
+  padding: 0.65rem 1.15rem;     /* antes: 0.45rem 0.85rem */
+  border-radius: 0.5rem;        /* antes: 999px (rounded-full) → ahora rounded-lg */
+  border: 1px solid #3a3f4a;
+  background: #2e323c;
+  color: #9aa1ae;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+  .chip:hover {
+    color: #dce0e6;
+    border-color: #4a505e;
+    transform: translateY(-1px);
+  }
+
+  .chip--active {
+    background: #9ab8ff;
+    color: #262932;
+    border-color: #9ab8ff;
+    font-weight: 600;
+    box-shadow: 0 0 0 3px rgba(154, 184, 255, 0.15);
+  }
+
+  .chip--active:hover {
+    background: #b0c7ff;
+    border-color: #b0c7ff;
+    color: #262932;
+  }
+
+  .chip--difficulty.chip--active {
+    background: var(--chip-accent, #9ab8ff);
+    border-color: var(--chip-accent, #9ab8ff);
+    color: #262932;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--chip-accent, #9ab8ff) 20%, transparent);
+  }
+
+  /* ============================
+     Modal de estadísticas
+     ============================ */
+  .stats-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+
+  .stats-modal.hidden {
+    display: none;
+  }
+
+  .stats-modal--open {
+    opacity: 1;
+  }
+
+  .stats-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 17, 21, 0.75);
+    backdrop-filter: blur(4px);
+    cursor: pointer;
+  }
+
+  .stats-panel {
+    position: relative;
+    width: 100%;
+    max-width: 720px;
+    max-height: calc(100vh - 2rem);
+    overflow-y: auto;
+    background: #2e323c;
+    border: 1px solid #3a3f4a;
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    box-shadow:
+      0 20px 50px rgba(0, 0, 0, 0.5),
+      0 4px 12px rgba(0, 0, 0, 0.3);
+    animation: stats-pop 0.2s ease;
+  }
+
+  @keyframes stats-pop {
+    from {
+      transform: scale(0.96);
+      opacity: 0;
+    }
+    to {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+
+  .stats-panel::-webkit-scrollbar {
+    width: 8px;
+  }
+  .stats-panel::-webkit-scrollbar-thumb {
+    background: #3a3f4a;
+    border-radius: 4px;
+  }
+</style>

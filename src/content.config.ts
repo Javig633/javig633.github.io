@@ -10,9 +10,13 @@ const writeups = defineCollection({
       platform: z.string().optional(),
       difficulty: z.enum(["Easy", "Medium", "Hard", "Insane"]).optional(),
       os: z.enum(["Linux", "Windows"]).optional(),
-      date: z.coerce.date().optional(),
+      releaseDate: z.coerce.date().optional(), // fecha de salida de la máquina
+      date: z.coerce.date().optional(),        // fecha en que la completaste
+      userRank: z.union([z.number(), z.string()]).optional(), // tu rank
       tags: z.array(z.string()).optional(),
-      image: image().optional(), // ← nueva
+      image: image().optional(),
+      imageShape: z.enum(["round", "square"]).optional().default("round"),
+      rating: z.number().min(0).max(5).optional(),
     }),
 });
 

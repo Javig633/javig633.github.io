@@ -177,21 +177,18 @@
    Code blocks estilo terminal
    ============================ */
 
-.prose-custom pre {
+/* Wrapper que contiene el pre + el header */
+.code-block {
   position: relative;
-  padding: 2.75rem 1rem 1rem;
-  background-color: #1d2028 !important;
+  margin: 1.5rem 0;
   border: 1px solid var(--color-border);
   border-radius: 0.5rem;
-  overflow-x: auto;
-  margin: 1.5rem 0;
-  font-size: 0.875rem;
-  line-height: 1.55;
-  font-family: var(--font-mono);
+  background-color: #1d2028;
+  overflow: hidden;
 }
 
 /* Barra superior con los tres circulitos */
-.prose-custom pre::before {
+.code-block::before {
   content: "";
   position: absolute;
   top: 0;
@@ -200,7 +197,6 @@
   height: 2rem;
   background-color: #252830;
   border-bottom: 1px solid var(--color-border);
-  border-radius: 0.5rem 0.5rem 0 0;
   background-image:
     radial-gradient(circle at center, #ff5f57 4.5px, transparent 5px),
     radial-gradient(circle at center, #febc2e 4.5px, transparent 5px),
@@ -222,7 +218,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 0.75rem 0 5rem; /* deja hueco a los circulitos */
+  padding: 0 0.6rem 0 5rem;
   pointer-events: none;
   z-index: 3;
 }
@@ -239,7 +235,18 @@
   letter-spacing: 0.08em;
 }
 
-.code-expand-btn {
+/* Contenedor de acciones a la derecha */
+.code-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+/* Estilo común para botones de acción */
+.code-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
   font-size: 0.65rem;
   font-family: var(--font-mono);
   text-transform: uppercase;
@@ -247,16 +254,56 @@
   color: #9aa1ae;
   background: #353945;
   border: 1px solid #3a3f4a;
-  padding: 0.15rem 0.55rem;
+  padding: 0.15rem 0.5rem;
   border-radius: 0.25rem;
   cursor: pointer;
   transition: all 0.15s;
   line-height: 1.4;
 }
 
-.code-expand-btn:hover {
+.code-action-btn:hover {
   color: #9ab8ff;
   border-color: #9ab8ff;
+}
+
+.code-action-icon {
+  width: 0.75rem;
+  height: 0.75rem;
+}
+
+.code-action-text {
+  font-size: 0.65rem;
+}
+
+/* Estado de éxito al copiar */
+.code-action-btn--success,
+.code-action-btn--success:hover {
+  color: #8fd48f;
+  border-color: #8fd48f;
+  background: #2a352b;
+}
+
+/* En móvil, ocultamos el texto de los botones, solo iconos */
+@media (max-width: 640px) {
+  .code-action-text {
+    display: none;
+  }
+  .code-action-btn {
+    padding: 0.15rem 0.35rem;
+  }
+}
+
+/* El pre dentro del wrapper: sin bordes ni fondo propios, con scroll horizontal */
+.prose-custom .code-block pre {
+  margin: 0;
+  padding: 2.75rem 1rem 1rem;
+  background-color: transparent !important;
+  border: none;
+  border-radius: 0;
+  overflow-x: auto;
+  font-size: 0.875rem;
+  line-height: 1.55;
+  font-family: var(--font-mono);
 }
 
 /* Estado colapsado */
@@ -264,20 +311,49 @@
   max-height: 400px;
   overflow-y: hidden;
   overflow-x: auto;
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    black 0%,
+    black 88%,
+    rgba(0, 0, 0, 0.4) 96%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    black 0%,
+    black 88%,
+    rgba(0, 0, 0, 0.4) 96%,
+    transparent 100%
+  );
 }
 
 /* Degradado que avisa de que hay más contenido abajo */
-.prose-custom pre.is-collapsible.is-collapsed::after {
+.code-block.has-collapsed::after {
   content: "";
   position: absolute;
   left: 1px;
   right: 1px;
   bottom: 1px;
-  height: 90px;
-  background: linear-gradient(to bottom, transparent 0%, #1d2028 95%);
+  height: 25px;
+  background: linear-gradient(to bottom, transparent 0%, #1d2028 100%);
   pointer-events: none;
   border-radius: 0 0 0.5rem 0.5rem;
   z-index: 1;
+}
+
+
+/* Fallback: pre fuera de .code-block (por si algún día hay alguno suelto) */
+.prose-custom > pre {
+  position: relative;
+  padding: 2.75rem 1rem 1rem;
+  background-color: #1d2028 !important;
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  overflow-x: auto;
+  margin: 1.5rem 0;
+  font-size: 0.875rem;
+  line-height: 1.55;
+  font-family: var(--font-mono);
 }
 
 .prose-custom pre code {
@@ -301,7 +377,6 @@
 .prose-custom pre::-webkit-scrollbar-thumb:hover {
   background: #4a505e;
 }
-
 
 /* ============================
    Callouts (rehype-callouts)
@@ -421,14 +496,14 @@
 }
 
 /* ---------- Colapso automático ---------- */
-/* Por defecto, todo expandido (fallback si JS aún no ha corrido) */
+/* Por defecto, todo colapsado — evita el flash al cargar */
 li[data-has-children="true"] > .toc-tree-nested {
-  display: block;
+  display: none;
 }
 
-/* Cuando el li no contiene el heading activo, escondemos sus hijos */
-li[data-has-children="true"][data-expanded="false"] > .toc-tree-nested {
-  display: none;
+/* Cuando el li contiene el heading activo, mostramos sus hijos */
+li[data-has-children="true"][data-expanded="true"] > .toc-tree-nested {
+  display: block;
 }
 
 /* Anclas: que no queden pegadas arriba al hacer clic en el TOC */
@@ -488,4 +563,67 @@ li[data-has-children="true"][data-expanded="false"] > .toc-tree-nested {
 
 .tool-icon.is-fallback .tool-icon-letter {
   display: block;
+}
+
+/* ============================
+   Botón volver arriba
+   ============================ */
+
+.back-to-top {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  z-index: 50;
+
+  width: 2.75rem;
+  height: 2.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: #2e323c;
+  border: 1px solid #3a3f4a;
+  border-radius: 0.5rem;
+  color: #9aa1ae;
+  cursor: pointer;
+
+  opacity: 0;
+  transform: translateY(1rem);
+  pointer-events: none;
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease,
+    color 0.15s ease,
+    border-color 0.15s ease,
+    background 0.15s ease;
+
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.25),
+    0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.back-to-top--visible {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.back-to-top:hover {
+  color: #9ab8ff;
+  border-color: #9ab8ff;
+  background: #353945;
+}
+
+.back-to-top:active {
+  transform: translateY(1px);
+}
+
+/* En móvil, un poco más pequeño y pegado a la esquina */
+@media (max-width: 640px) {
+  .back-to-top {
+    bottom: 1rem;
+    right: 1rem;
+    width: 2.5rem;
+    height: 2.5rem;
+  }
 }
